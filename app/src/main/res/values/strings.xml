@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">PrinterB</string>
+    <string name="printer_name">Printer Name</string>
+    <string name="print_text">Print Receipt</string>
+    <string name="print_image">Print Image</string>
+    <string name="stop_">Stop</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
