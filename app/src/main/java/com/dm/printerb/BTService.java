@@ -1,6 +1,5 @@
 package com.dm.printerb;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 
 import java.io.InputStream;
