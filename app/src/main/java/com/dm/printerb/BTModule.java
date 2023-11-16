@@ -13,6 +13,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -21,16 +22,15 @@ import java.util.concurrent.Executors;
 
 public class BTModule implements BTService {
 
-    private BluetoothAdapter bTAdapter;
+    private final BluetoothAdapter bTAdapter;
     private BluetoothSocket bTSocket;
     private BluetoothDevice bTDevice;
 
     private volatile boolean stopWorker;
 
     private int readBufferPosition;
-    public static String printerId;
 
-    private Context context;
+    private final Context context;
 
     private OutputStream outputStream;
     private InputStream inputStream;
@@ -65,8 +65,10 @@ public class BTModule implements BTService {
                     pairedDevices.stream().filter(bluetoothDevice ->
                             bluetoothDevice.getName().equals(device)).findFirst();
 
+
             if (paired.isPresent()) {
                 bTDevice = paired.get();
+
             } else {
                 showMessage("Bluetooth device not found");
                 return false;
@@ -84,6 +86,7 @@ public class BTModule implements BTService {
         try {
             UUID uuid = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
             bTSocket = bTDevice.createRfcommSocketToServiceRecord(uuid);
+            bTAdapter.cancelDiscovery();
             bTSocket.connect();
             outputStream = bTSocket.getOutputStream();
             inputStream = bTSocket.getInputStream();
@@ -107,7 +110,7 @@ public class BTModule implements BTService {
                         int bytesAvailable = inputStream.available();
                         if (bytesAvailable > 0) {
                             byte[] packetBytes = new byte[bytesAvailable];
-                            inputStream.read(packetBytes);
+                            int read = inputStream.read(packetBytes);
                             for (int i = 0; i < bytesAvailable; i++) {
                                 byte b = packetBytes[i];
                                 if (b == delimiter) {
@@ -117,7 +120,7 @@ public class BTModule implements BTService {
                                             encodedBytes, 0,
                                             encodedBytes.length
                                     );
-                                    final String data = new String(encodedBytes, "US-ASCII");
+                                    final String data = new String(encodedBytes, StandardCharsets.US_ASCII);
                                     readBufferPosition = 0;
                                     new Handler(Looper.getMainLooper()).post(() -> {
                                         showMessage(data);
@@ -139,15 +142,18 @@ public class BTModule implements BTService {
 
     @Override
     public void closeBTDevice() {
-        try {
-            stopWorker = true;
-            outputStream.close();
-            inputStream.close();
-            bTSocket.close();
-            showMessage("Printing done");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                stopWorker = true;
+                outputStream.close();
+                inputStream.close();
+                bTSocket.close();
+                bTSocket = null;
+                showMessage("Printing done");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 300);
     }
 
     @Override
